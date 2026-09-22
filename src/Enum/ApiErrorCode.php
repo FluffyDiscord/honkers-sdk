@@ -21,6 +21,6 @@ enum ApiErrorCode: string
 
     public function getTranslationKey(): string
     {
-        return 'fluffydiscord_sylius_chatbot.error.' . $this->value;
+        return 'fluffydiscord_honkers.error.' . $this->value;
     }
 }
