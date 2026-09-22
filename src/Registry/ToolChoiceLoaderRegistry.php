@@ -5,15 +5,14 @@ declare(strict_types=1);
 namespace FluffyDiscord\Honkers\Registry;
 
 use FluffyDiscord\Honkers\Contract\ToolChoiceLoaderInterface;
-use Psr\Container\ContainerInterface;
 
 class ToolChoiceLoaderRegistry
 {
     /**
-     * @param ContainerInterface $loaders choice loaders keyed by their class name
+     * @param iterable<ToolChoiceLoaderInterface> $loaders
      */
     public function __construct(
-        private readonly ContainerInterface $loaders,
+        private readonly iterable $loaders,
     ) {
     }
 
@@ -24,18 +23,32 @@ class ToolChoiceLoaderRegistry
      */
     public function getChoices(string $loaderClass): array
     {
-        $isRegistered = $this->loaders->has($loaderClass);
-        if (!$isRegistered) {
+        $loader = $this->findLoader($loaderClass);
+        if ($loader === null) {
             throw new \LogicException(sprintf(
-                'The tool choice loader "%s" is not a service implementing %s.',
+                'The tool choice loader "%s" is not registered as a %s.',
                 $loaderClass,
                 ToolChoiceLoaderInterface::class,
             ));
         }
 
-        $loader = $this->loaders->get($loaderClass);
         $choices = $loader->loadChoices();
 
         return array_values(array_unique($choices));
+    }
+
+    /**
+     * @param class-string<ToolChoiceLoaderInterface> $loaderClass
+     */
+    private function findLoader(string $loaderClass): ?ToolChoiceLoaderInterface
+    {
+        foreach ($this->loaders as $loader) {
+            $matches = $loader instanceof $loaderClass;
+            if ($matches) {
+                return $loader;
+            }
+        }
+
+        return null;
     }
 }

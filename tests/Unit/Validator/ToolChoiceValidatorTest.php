@@ -10,7 +10,6 @@ use FluffyDiscord\Honkers\Tests\Unit\Fixtures\RegionChoiceLoader;
 use FluffyDiscord\Honkers\Validator\ToolChoice;
 use FluffyDiscord\Honkers\Validator\ToolChoiceValidator;
 use PHPUnit\Framework\Attributes\DataProvider;
-use FluffyDiscord\Honkers\Tests\Unit\Fixtures\ArrayContainer;
 use Symfony\Component\Validator\Constraints\Choice;
 use Symfony\Component\Validator\Constraints\NotBlank;
 use Symfony\Component\Validator\ConstraintValidatorInterface;
@@ -26,9 +25,7 @@ class ToolChoiceValidatorTest extends ConstraintValidatorTestCase
 {
     protected function createValidator(): ConstraintValidatorInterface
     {
-        $registry = new ToolChoiceLoaderRegistry(new ArrayContainer([
-            RegionChoiceLoader::class => static fn (): RegionChoiceLoader => new RegionChoiceLoader(),
-        ]));
+        $registry = new ToolChoiceLoaderRegistry([new RegionChoiceLoader()]);
 
         return new ToolChoiceValidator($registry);
     }

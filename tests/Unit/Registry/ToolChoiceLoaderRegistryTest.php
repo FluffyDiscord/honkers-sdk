@@ -4,37 +4,29 @@ declare(strict_types=1);
 
 namespace FluffyDiscord\Honkers\Tests\Unit\Registry;
 
-use FluffyDiscord\Honkers\Contract\ToolChoiceLoaderInterface;
 use FluffyDiscord\Honkers\Registry\ToolChoiceLoaderRegistry;
 use FluffyDiscord\Honkers\Tests\Unit\Fixtures\RegionChoiceLoader;
 use PHPUnit\Framework\TestCase;
-use FluffyDiscord\Honkers\Tests\Unit\Fixtures\ArrayContainer;
 
 class ToolChoiceLoaderRegistryTest extends TestCase
 {
     public function testReturnsTheChoicesOfTheRegisteredLoader(): void
     {
-        $registry = new ToolChoiceLoaderRegistry(new ArrayContainer([
-            RegionChoiceLoader::class => static fn (): RegionChoiceLoader => new RegionChoiceLoader(),
-        ]));
+        $registry = new ToolChoiceLoaderRegistry([new RegionChoiceLoader()]);
 
         self::assertSame(['Praha', 'Moravskoslezský kraj'], $registry->getChoices(RegionChoiceLoader::class));
     }
 
     public function testReturnsEachChoiceOnceAsAList(): void
     {
-        $loader = $this->createStub(ToolChoiceLoaderInterface::class);
-        $loader->method('loadChoices')->willReturn([3 => 'Praha', 5 => 'Praha', 7 => 'Vysočina']);
-        $registry = new ToolChoiceLoaderRegistry(new ArrayContainer([
-            'keyed' => static fn (): ToolChoiceLoaderInterface => $loader,
-        ]));
+        $registry = new ToolChoiceLoaderRegistry([new RegionChoiceLoader(['Praha', 'Praha', 'Vysočina'])]);
 
-        self::assertSame(['Praha', 'Vysočina'], $registry->getChoices('keyed'));
+        self::assertSame(['Praha', 'Vysočina'], $registry->getChoices(RegionChoiceLoader::class));
     }
 
     public function testRefusesALoaderThatIsNotRegistered(): void
     {
-        $registry = new ToolChoiceLoaderRegistry(new ArrayContainer([]));
+        $registry = new ToolChoiceLoaderRegistry([]);
 
         $this->expectException(\LogicException::class);
         $this->expectExceptionMessage(RegionChoiceLoader::class);

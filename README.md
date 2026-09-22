@@ -59,7 +59,7 @@ class GreetArguments
 //     'required' => ['name'], 'additionalProperties' => false]
 ```
 
-Registries resolve tools/sources lazily through a PSR-11 container:
+Registries wrap a plain iterable of tools/sources and key them by `getDefinition()->name`:
 
 ```php
 $tool = $toolRegistry->get('greet');   // null when unknown
@@ -74,31 +74,24 @@ result DTOs (`ToolResult`, `ToolDefinition`, `SourceDocument`, …) and helpers 
 ## Standalone setup (no framework)
 
 The SDK owns the logic, not the transport. You wire the registries once, then map four HTTP routes
-to them. `symfony/framework-bundle` is not needed.
+to them.
 
-Wire the pieces (a PSR-11 container is any map of services keyed by name):
+Wire the pieces — each registry takes a plain list of services, no container:
 
 ```php
 use FluffyDiscord\Honkers\Registry\ToolRegistry;
 use FluffyDiscord\Honkers\Registry\DataSourceRegistry;
 use FluffyDiscord\Honkers\Registry\ToolChoiceLoaderRegistry;
 use FluffyDiscord\Honkers\Schema\ArgumentsSchemaGenerator;
-use Psr\Container\ContainerInterface;
 use Symfony\Component\Validator\Validation;
 
-$asContainer = static fn (array $map): ContainerInterface => new class ($map) implements ContainerInterface {
-    public function __construct(private array $map) {}
-    public function has(string $id): bool { return isset($this->map[$id]); }
-    public function get(string $id): mixed { return $this->map[$id]; }
-};
+$tools   = [new GreetTool()];   // ChatbotToolInterface, keyed at runtime by getDefinition()->name
+$sources = [];                  // ChatbotDataSourceInterface
+$loaders = [];                  // ToolChoiceLoaderInterface, matched by class
 
-$tools   = ['greet' => new GreetTool()];               // keyed by getDefinition()->name
-$sources = [];                                          // ChatbotDataSourceInterface, keyed by name
-$loaders = [];                                          // ToolChoiceLoaderInterface, keyed by class name
-
-$toolRegistry   = new ToolRegistry($asContainer($tools), array_keys($tools));
-$sourceRegistry = new DataSourceRegistry($asContainer($sources), array_keys($sources));
-$schema         = new ArgumentsSchemaGenerator(new ToolChoiceLoaderRegistry($asContainer($loaders)));
+$toolRegistry   = new ToolRegistry($tools);
+$sourceRegistry = new DataSourceRegistry($sources);
+$schema         = new ArgumentsSchemaGenerator(new ToolChoiceLoaderRegistry($loaders));
 $validator      = Validation::createValidatorBuilder()->enableAttributeMapping()->getValidator();
 ```
 

@@ -8,8 +8,16 @@ use FluffyDiscord\Honkers\Contract\ToolChoiceLoaderInterface;
 
 class RegionChoiceLoader implements ToolChoiceLoaderInterface
 {
+    /**
+     * @param list<string> $choices
+     */
+    public function __construct(
+        private readonly array $choices = ['Praha', 'Moravskoslezský kraj'],
+    ) {
+    }
+
     public function loadChoices(): array
     {
-        return ['Praha', 'Moravskoslezský kraj'];
+        return $this->choices;
     }
 }

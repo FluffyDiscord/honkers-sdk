@@ -5,28 +5,27 @@ declare(strict_types=1);
 namespace FluffyDiscord\Honkers\Registry;
 
 use FluffyDiscord\Honkers\Contract\ChatbotDataSourceInterface;
-use Psr\Container\ContainerInterface;
 
 class DataSourceRegistry
 {
     /**
-     * @param ContainerInterface $sources data sources keyed by their definition name
-     * @param list<string>       $names   every registered definition name
+     * @param iterable<ChatbotDataSourceInterface> $sources
      */
     public function __construct(
-        private readonly ContainerInterface $sources,
-        private readonly array              $names = [],
+        private readonly iterable $sources,
     ) {
     }
 
     public function get(string $name): ?ChatbotDataSourceInterface
     {
-        $isKnown = $this->sources->has($name);
-        if (!$isKnown) {
-            return null;
+        foreach ($this->sources as $source) {
+            $definitionName = $source->getDefinition()->name;
+            if ($definitionName === $name) {
+                return $source;
+            }
         }
 
-        return $this->sources->get($name);
+        return null;
     }
 
     /**
@@ -34,8 +33,6 @@ class DataSourceRegistry
      */
     public function all(): iterable
     {
-        foreach ($this->names as $name) {
-            yield $this->sources->get($name);
-        }
+        yield from $this->sources;
     }
 }

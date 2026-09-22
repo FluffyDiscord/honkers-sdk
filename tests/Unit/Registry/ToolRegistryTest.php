@@ -7,13 +7,12 @@ namespace FluffyDiscord\Honkers\Tests\Unit\Registry;
 use FluffyDiscord\Honkers\Registry\ToolRegistry;
 use FluffyDiscord\Honkers\Tests\Unit\Fixtures\AlphaTool;
 use PHPUnit\Framework\TestCase;
-use FluffyDiscord\Honkers\Tests\Unit\Fixtures\ArrayContainer;
 
 class ToolRegistryTest extends TestCase
 {
     public function testUnknownNameReturnsNull(): void
     {
-        $registry = new ToolRegistry(new ArrayContainer([]));
+        $registry = new ToolRegistry([]);
 
         self::assertNull($registry->get('unknown'));
     }
@@ -21,9 +20,7 @@ class ToolRegistryTest extends TestCase
     public function testKnownNameReturnsTool(): void
     {
         $tool = new AlphaTool();
-        $registry = new ToolRegistry(new ArrayContainer([
-            'alpha_tool' => fn (): AlphaTool => $tool,
-        ]), ['alpha_tool']);
+        $registry = new ToolRegistry([$tool]);
 
         self::assertSame($tool, $registry->get('alpha_tool'));
         self::assertSame([$tool], iterator_to_array($registry->all(), false));

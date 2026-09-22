@@ -5,28 +5,27 @@ declare(strict_types=1);
 namespace FluffyDiscord\Honkers\Registry;
 
 use FluffyDiscord\Honkers\Contract\ChatbotToolInterface;
-use Psr\Container\ContainerInterface;
 
 class ToolRegistry
 {
     /**
-     * @param ContainerInterface $tools tools keyed by their definition name
-     * @param list<string>       $names every registered definition name
+     * @param iterable<ChatbotToolInterface> $tools
      */
     public function __construct(
-        private readonly ContainerInterface $tools,
-        private readonly array              $names = [],
+        private readonly iterable $tools,
     ) {
     }
 
     public function get(string $name): ?ChatbotToolInterface
     {
-        $isKnown = $this->tools->has($name);
-        if (!$isKnown) {
-            return null;
+        foreach ($this->tools as $tool) {
+            $definitionName = $tool->getDefinition()->name;
+            if ($definitionName === $name) {
+                return $tool;
+            }
         }
 
-        return $this->tools->get($name);
+        return null;
     }
 
     /**
@@ -34,8 +33,6 @@ class ToolRegistry
      */
     public function all(): iterable
     {
-        foreach ($this->names as $name) {
-            yield $this->tools->get($name);
-        }
+        yield from $this->tools;
     }
 }

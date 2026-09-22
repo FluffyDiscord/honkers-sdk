@@ -4,10 +4,8 @@ declare(strict_types=1);
 
 namespace FluffyDiscord\Honkers\Tests\Unit\Schema;
 
-use FluffyDiscord\Honkers\Contract\ToolChoiceLoaderInterface;
 use FluffyDiscord\Honkers\Registry\ToolChoiceLoaderRegistry;
 use FluffyDiscord\Honkers\Schema\ArgumentsSchemaGenerator;
-use FluffyDiscord\Honkers\Tests\Unit\Fixtures\ArrayContainer;
 use FluffyDiscord\Honkers\Tests\Unit\Fixtures\CodeListArguments;
 use FluffyDiscord\Honkers\Tests\Unit\Fixtures\ContactArguments;
 use FluffyDiscord\Honkers\Tests\Unit\Fixtures\MistypedRegionArguments;
@@ -23,9 +21,9 @@ class ArgumentsSchemaGeneratorTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->generator = new ArgumentsSchemaGenerator(new ToolChoiceLoaderRegistry(new ArrayContainer([
-            RegionChoiceLoader::class => static fn (): RegionChoiceLoader => new RegionChoiceLoader(),
-        ])));
+        $this->generator = new ArgumentsSchemaGenerator(
+            new ToolChoiceLoaderRegistry([new RegionChoiceLoader()]),
+        );
     }
 
     public function testToolChoicePropertyListsTheLoadedChoicesAsItsEnum(): void
@@ -64,11 +62,9 @@ class ArgumentsSchemaGeneratorTest extends TestCase
 
     public function testToolChoicePropertyIsLeftOutWhenTheLoaderOffersNothing(): void
     {
-        $emptyLoader = $this->createStub(ToolChoiceLoaderInterface::class);
-        $emptyLoader->method('loadChoices')->willReturn([]);
-        $generator = new ArgumentsSchemaGenerator(new ToolChoiceLoaderRegistry(new ArrayContainer([
-            RegionChoiceLoader::class => static fn (): ToolChoiceLoaderInterface => $emptyLoader,
-        ])));
+        $generator = new ArgumentsSchemaGenerator(
+            new ToolChoiceLoaderRegistry([new RegionChoiceLoader([])]),
+        );
 
         $schema = $generator->generate(RegionArguments::class);
 
