@@ -1,0 +1,30 @@
+{
+    "name": "fluffydiscord/honkers-sdk",
+    "description": "Framework-agnostic chatbot tool-server core: tools, data sources, JSON-schema generation and result DTOs",
+    "type": "library",
+    "license": "proprietary",
+    "require": {
+        "php": "^8.1",
+        "ext-intl": "*",
+        "psr/container": "^1.1 || ^2.0",
+        "symfony/intl": "^6.4 || ^7.0 || ^8.0",
+        "symfony/translation-contracts": "^3.0",
+        "symfony/validator": "^6.4 || ^7.0 || ^8.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^10.0 || ^11.0 || ^12.0 || ^13.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "FluffyDiscord\\Honkers\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "FluffyDiscord\\Honkers\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "sort-packages": true
+    }
+}
