@@ -1,27 +1,30 @@
 # Honkers SDK
 
-Framework-agnostic core of the Honkers chatbot tool-server. Plain PHP (8.1+) with no HTTP
-kernel, no DI container and no Sylius — it only depends on `symfony/validator`,
-`symfony/serializer`-free DTOs, `symfony/intl` and `symfony/translation-contracts` as libraries,
-plus `psr/container`.
+Framework-agnostic core of the Honkers chatbot tool-server. Plain PHP 8.1+, no HTTP kernel, no DI
+container, no Sylius.
 
-It provides the building blocks a chatbot backend calls over HTTP:
+Depends only on these as libraries: `symfony/validator`, `symfony/intl`,
+`symfony/translation-contracts`, `psr/container`, `ext-intl`.
+
+## Provides
 
 - **Contracts** — `ChatbotToolInterface`, `ChatbotDataSourceInterface`, `ToolChoiceLoaderInterface`,
-  and the `ChatbotLocaleContextInterface` port a host application implements.
+  and the `ChatbotLocaleContextInterface` port the host app implements.
 - **Registries** — `ToolRegistry`, `DataSourceRegistry`, `ToolChoiceLoaderRegistry`, each backed by
   a PSR-11 container so lookups stay lazy.
-- **Schema** — `ArgumentsSchemaGenerator` turns a tool's argument DTO (annotated with
-  `symfony/validator` constraints) into a JSON Schema, including runtime-loaded choice enums.
+- **`ArgumentsSchemaGenerator`** — turns a tool's argument DTO (`symfony/validator` constraints)
+  into a JSON Schema, including runtime-loaded choice enums.
 - **DTOs** — the tool/source result vocabulary (`ToolResult`, `ToolDefinition`, `SourceDocument`, …).
-- **Cursor / locale / text helpers** — `CursorCodec`, `LocaleMatcher`, `HtmlToText`.
+- **Helpers** — `CursorCodec`, `LocaleMatcher`, `HtmlToText`.
 
-Wire it into Symfony with `fluffydiscord/symfony-honkers-bundle`. Sylius shops get plug-and-play
-defaults from `fluffydiscord/sylius-honkers-bundle`.
+## Usage
+
+- Symfony app: `fluffydiscord/symfony-honkers-bundle`.
+- Sylius shop: `fluffydiscord/sylius-honkers-bundle`.
 
 ## Tests
 
-```
+```bash
 composer install
 vendor/bin/phpunit
 ```
