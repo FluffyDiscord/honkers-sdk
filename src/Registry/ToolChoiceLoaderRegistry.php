@@ -43,7 +43,7 @@ class ToolChoiceLoaderRegistry
     private function findLoader(string $loaderClass): ?ToolChoiceLoaderInterface
     {
         foreach ($this->loaders as $loader) {
-            $matches = $loader instanceof $loaderClass;
+            $matches = $loader::class === $loaderClass;
             if ($matches) {
                 return $loader;
             }

@@ -66,6 +66,9 @@ $tool = $toolRegistry->get('greet');   // null when unknown
 foreach ($toolRegistry->all() as $tool) { /* ... */ }
 ```
 
+Names must be unique — on a duplicate, `get()` returns the first match. The Symfony bundle fails
+the container build on a duplicate; standalone, keep them distinct yourself.
+
 Also here: `ChatbotDataSourceInterface` (bulk documents), `ToolChoiceLoaderInterface` +
 `#[ToolChoice]` (DB-backed enums), the `ChatbotLocaleContextInterface` port the host app implements,
 result DTOs (`ToolResult`, `ToolDefinition`, `SourceDocument`, …) and helpers (`CursorCodec`,
