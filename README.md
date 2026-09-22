@@ -1,6 +1,7 @@
 # Honkers SDK
 
-Framework-agnostic core of the Honkers.dev chatbot tool-server.
+Framework-agnostic PHP for the Honkers.dev chatbot. Serve the tool/source endpoints the chatbot
+calls, push catalog changes back to the backend, and render the chat widget — no framework required.
 
 Used by:
 
@@ -187,6 +188,61 @@ these paths — only the origin (scheme + host) is yours to configure on the bac
   `ChatbotApiException` subclass; `getErrorCode()` gives the `code`, `getStatusCode()` the HTTP
   status (`tool_not_found`/`source_not_found` 404, `validation_failed` 422 with `violations`,
   `invalid_cursor`/`invalid_locale` 400).
+
+## Outbound: push catalog changes
+
+Tell the backend which catalog entries changed so it re-indexes them. This is the only call your
+server makes *to* honkers — `POST {backend}/api/v1/catalog/changes`, auth `Bearer {siteKey}.{ingestSecret}`.
+
+The client speaks PSR-18, so plug in any HTTP client (Guzzle, Symfony's `Psr18Client`, …) and PSR-17
+factories:
+
+```php
+use FluffyDiscord\Honkers\DTO\CatalogChange;
+use FluffyDiscord\Honkers\Enum\CatalogSourceName;
+use FluffyDiscord\Honkers\Ingest\CatalogIngestClient;
+
+$client = new CatalogIngestClient(
+    $psr18Client,     // Psr\Http\Client\ClientInterface
+    $psr17Factory,    // Psr\Http\Message\RequestFactoryInterface
+    $psr17Factory,    // Psr\Http\Message\StreamFactoryInterface
+    'https://your-backend.honkers.dev',
+    $ingestSecret,
+);
+
+$change = new CatalogChange(CatalogSourceName::Products, 'cs_CZ', ['CLIPPER-01', 'CLIPPER-02']);
+$result = $client->send($siteKey, $change);
+
+if ($result->isThrottled()) {
+    // backend is busy — retry after $result->retryAfterSeconds
+}
+foreach ($result->jobs as $job) {
+    // $job->externalId, $job->jobId, $job->status (CatalogJobStatus), $job->violation
+}
+```
+
+- `source` is `products`, `categories`, or `cms_pages` (`CatalogSourceName`).
+- **Max 500 ids per call.** More than that throws — chunk them yourself.
+- `202` → `accepted`, with a per-id job list (bad ids come back `rejected` with a `violation`).
+- `429` → `isThrottled()`, `retryAfterSeconds` set; nothing was queued.
+- Auth/validation failures throw `CatalogIngestException` (`getStatusCode()`, `getBackendErrorCode()`).
+
+## Widget embed
+
+Render the chat widget markup for any page:
+
+```php
+use FluffyDiscord\Honkers\Widget\WidgetSnippet;
+
+echo (new WidgetSnippet())->render(
+    'https://your-backend.honkers.dev',  // backend origin
+    $siteKey,                            // public site key
+    $cdnUrl,                             // optional; '' → {backend}/widget/v1/chat.js
+    $locale,                             // optional; '' → the browser detects it
+);
+```
+
+Emits a deferred loader `<script>` and the `<ai-chat-widget>` element; all attribute values are escaped.
 
 ## Tests
 
