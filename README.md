@@ -171,14 +171,15 @@ matching against a channel's served locales is optional — use `LocaleMatcher` 
 
 ## HTTP contract (what the chatbot backend expects)
 
-Base path is yours; the example uses `/chatbot/v1`. Tell the backend the full base URL.
+The paths are fixed: the backend calls `/chatbot/v1/...` on your host. Serve the endpoints at exactly
+these paths — only the origin (scheme + host) is yours to configure on the backend.
 
 | Method | Path | Request | Response |
 |---|---|---|---|
-| GET | `/tools` | `Accept-Language` (optional) | `{ "tools": [ {name, description, inputSchema, ui?} ] }` |
-| POST | `/tools/{name}` | `{ "arguments": {...}, "context": { "conversationId", "locale", "channelCode"? } }` | `{ "content": [{type,text}], "blocks": [], "isError": bool }` |
-| GET | `/sources` | — | `{ "sources": [ {name, description, locales} ] }` |
-| GET | `/sources/{name}` | `?locale=&channel=&cursor=&ids[]=` (`ids[]` max 500; then `cursor` ignored, `nextCursor` null) | `{ "documents": [...], "nextCursor": string\|null }` |
+| GET | `/chatbot/v1/tools` | `Accept-Language` (optional) | `{ "tools": [ {name, description, inputSchema, ui?} ] }` |
+| POST | `/chatbot/v1/tools/{name}` | `{ "arguments": {...}, "context": { "conversationId", "locale", "channelCode"? } }` | `{ "content": [{type,text}], "blocks": [], "isError": bool }` |
+| GET | `/chatbot/v1/sources` | — | `{ "sources": [ {name, description, locales} ] }` |
+| GET | `/chatbot/v1/sources/{name}` | `?locale=&channel=&cursor=&ids[]=` (`ids[]` max 500; then `cursor` ignored, `nextCursor` null) | `{ "documents": [...], "nextCursor": string\|null }` |
 
 - **Auth** — the backend sends `Authorization: Bearer <shared-secret>`. The SDK does no auth; verify
   the header yourself (`hash_equals`) or let the Symfony bundle's firewall do it.
