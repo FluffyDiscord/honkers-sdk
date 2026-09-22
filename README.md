@@ -1,26 +1,75 @@
 # Honkers SDK
 
-Framework-agnostic core of the Honkers chatbot tool-server. Plain PHP 8.1+, no HTTP kernel, no DI
-container, no Sylius.
+Framework-agnostic core of the Honkers.dev chatbot tool-server.
 
-Depends only on these as libraries: `symfony/validator`, `symfony/intl`,
-`symfony/translation-contracts`, `psr/container`, `ext-intl`.
+Used by:
 
-## Provides
+- [`fluffydiscord/symfony-honkers-bundle`](https://github.com/FluffyDiscord/symfony-honkers-bundle) — Symfony wiring + the `/chatbot/v1` HTTP endpoints.
+- [`fluffydiscord/sylius-honkers-bundle`](https://github.com/FluffyDiscord/sylius-honkers-bundle) — Sylius defaults (tools, data sources, shop widget).
 
-- **Contracts** — `ChatbotToolInterface`, `ChatbotDataSourceInterface`, `ToolChoiceLoaderInterface`,
-  and the `ChatbotLocaleContextInterface` port the host app implements.
-- **Registries** — `ToolRegistry`, `DataSourceRegistry`, `ToolChoiceLoaderRegistry`, each backed by
-  a PSR-11 container so lookups stay lazy.
-- **`ArgumentsSchemaGenerator`** — turns a tool's argument DTO (`symfony/validator` constraints)
-  into a JSON Schema, including runtime-loaded choice enums.
-- **DTOs** — the tool/source result vocabulary (`ToolResult`, `ToolDefinition`, `SourceDocument`, …).
-- **Helpers** — `CursorCodec`, `LocaleMatcher`, `HtmlToText`.
+## Examples
 
-## Usage
+A tool — one class, one arguments DTO:
 
-- Symfony app: `fluffydiscord/symfony-honkers-bundle`.
-- Sylius shop: `fluffydiscord/sylius-honkers-bundle`.
+```php
+use FluffyDiscord\Honkers\Contract\ChatbotToolInterface;
+use FluffyDiscord\Honkers\DTO\ContentItem;
+use FluffyDiscord\Honkers\DTO\ToolCallContext;
+use FluffyDiscord\Honkers\DTO\ToolDefinition;
+use FluffyDiscord\Honkers\DTO\ToolResult;
+
+class GreetTool implements ChatbotToolInterface
+{
+    public function getDefinition(): ToolDefinition
+    {
+        return new ToolDefinition('greet', 'app.chatbot.greet.description');
+    }
+
+    public function getArgumentsClass(): string
+    {
+        return GreetArguments::class;
+    }
+
+    public function execute(object $arguments, ToolCallContext $context): ToolResult
+    {
+        return new ToolResult([new ContentItem('Hello ' . $arguments->name)]);
+    }
+}
+```
+
+Argument DTOs carry `symfony/validator` constraints; `ArgumentsSchemaGenerator` turns them into a
+JSON Schema (with runtime-loaded choice enums):
+
+```php
+use Symfony\Component\Validator\Constraints as Assert;
+
+class GreetArguments
+{
+    public function __construct(
+        #[Assert\NotBlank]
+        #[Assert\Length(max: 64)]
+        public string $name = '',
+    ) {
+    }
+}
+
+// $generator->generate(GreetArguments::class)
+// => ['type' => 'object',
+//     'properties' => ['name' => ['type' => 'string', 'maxLength' => 64]],
+//     'required' => ['name'], 'additionalProperties' => false]
+```
+
+Registries resolve tools/sources lazily through a PSR-11 container:
+
+```php
+$tool = $toolRegistry->get('greet');   // null when unknown
+foreach ($toolRegistry->all() as $tool) { /* ... */ }
+```
+
+Also here: `ChatbotDataSourceInterface` (bulk documents), `ToolChoiceLoaderInterface` +
+`#[ToolChoice]` (DB-backed enums), the `ChatbotLocaleContextInterface` port the host app implements,
+result DTOs (`ToolResult`, `ToolDefinition`, `SourceDocument`, …) and helpers (`CursorCodec`,
+`LocaleMatcher`, `HtmlToText`).
 
 ## Tests
 
