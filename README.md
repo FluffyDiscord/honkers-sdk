@@ -1,6 +1,6 @@
-# Honkers SDK
+# honkers.dev SDK
 
-Framework-agnostic PHP for the Honkers.dev chatbot. Serve the tool/source endpoints the chatbot
+Framework-agnostic PHP for the honkers.dev chatbot. Serve the tool/source endpoints the chatbot
 calls, push catalog changes back to the backend, and render the chat widget — no framework required.
 
 Used by:
@@ -192,7 +192,7 @@ these paths — only the origin (scheme + host) is yours to configure on the bac
 ## Outbound: push catalog changes
 
 Tell the backend which catalog entries changed so it re-indexes them. This is the only call your
-server makes *to* honkers — `POST {backend}/api/v1/catalog/changes`, auth `Bearer {siteKey}.{ingestSecret}`.
+server makes *to* honkers.dev — `POST {backend}/api/v1/catalog/changes`, auth `Bearer {siteKey}.{ingestSecret}`.
 
 The client speaks PSR-18, so plug in any HTTP client (Guzzle, Symfony's `Psr18Client`, …) and PSR-17
 factories:
@@ -206,7 +206,7 @@ $client = new CatalogIngestClient(
     $psr18Client,     // Psr\Http\Client\ClientInterface
     $psr17Factory,    // Psr\Http\Message\RequestFactoryInterface
     $psr17Factory,    // Psr\Http\Message\StreamFactoryInterface
-    'https://your-backend.honkers.dev',
+    'https://honkers.dev',
     $ingestSecret,
 );
 
@@ -235,7 +235,7 @@ Render the chat widget markup for any page:
 use FluffyDiscord\Honkers\Widget\WidgetSnippet;
 
 echo (new WidgetSnippet())->render(
-    'https://your-backend.honkers.dev',  // backend origin
+    'https://honkers.dev',  // backend origin
     $siteKey,                            // public site key
     $cdnUrl,                             // optional; '' → {backend}/widget/v1/chat.js
     $locale,                             // optional; '' → the browser detects it
