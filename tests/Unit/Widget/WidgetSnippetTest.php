@@ -9,11 +9,11 @@ use PHPUnit\Framework\TestCase;
 
 class WidgetSnippetTest extends TestCase
 {
-    public function testItFallsBackToTheBackendScriptPathWhenNoCdnIsGiven(): void
+    public function testItLoadsTheScriptFromTheHonkersCdnWhenNoCdnIsGiven(): void
     {
         $markup = (new WidgetSnippet())->render('https://honkers.test/', 'pk_site');
 
-        self::assertStringContainsString('<script src="https://honkers.test/widget/v1/chat.js" defer></script>', $markup);
+        self::assertStringContainsString('<script src="https://honkers.b-cdn.net/widget/v1/chat.js" defer></script>', $markup);
         self::assertStringContainsString('site-key="pk_site"', $markup);
         self::assertStringContainsString('backend-url="https://honkers.test/"', $markup);
         self::assertStringNotContainsString('locale=', $markup);

@@ -237,7 +237,7 @@ use FluffyDiscord\Honkers\Widget\WidgetSnippet;
 echo (new WidgetSnippet())->render(
     'https://honkers.dev',  // backend origin
     $siteKey,                            // public site key
-    $cdnUrl,                             // optional; '' → {backend}/widget/v1/chat.js
+    $cdnUrl,                             // optional; '' → https://honkers.b-cdn.net/widget/v1/chat.js
     $locale,                             // optional; '' → the browser detects it
 );
 ```

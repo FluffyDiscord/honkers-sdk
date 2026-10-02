@@ -8,7 +8,7 @@ class WidgetSnippet
 {
     public function render(string $backendUrl, string $siteKey, string $cdnUrl = '', string $locale = ''): string
     {
-        $scriptUrl = $this->resolveScriptUrl($backendUrl, $cdnUrl);
+        $scriptUrl = $this->resolveScriptUrl($cdnUrl);
 
         $script = sprintf('<script src="%s" defer></script>', $this->escape($scriptUrl));
         $element = $this->renderElement($backendUrl, $siteKey, $locale);
@@ -16,14 +16,19 @@ class WidgetSnippet
         return $script . "\n" . $element;
     }
 
-    private function resolveScriptUrl(string $backendUrl, string $cdnUrl): string
+    public function getDefaultCdnUrl(): string
+    {
+        return 'https://honkers.b-cdn.net/widget/v1/chat.js';
+    }
+
+    private function resolveScriptUrl(string $cdnUrl): string
     {
         $hasCdnUrl = $cdnUrl !== '';
         if ($hasCdnUrl) {
             return $cdnUrl;
         }
 
-        return rtrim($backendUrl, '/') . '/widget/v1/chat.js';
+        return $this->getDefaultCdnUrl();
     }
 
     private function renderElement(string $backendUrl, string $siteKey, string $locale): string
