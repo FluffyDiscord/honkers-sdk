@@ -1,0 +1,107 @@
+<?php
+
+declare(strict_types=1);
+
+namespace FluffyDiscord\Honkers\Telemetry;
+
+use FluffyDiscord\Honkers\DTO\ChatOrder;
+use FluffyDiscord\Honkers\Exception\TelemetryException;
+use Psr\Http\Client\ClientExceptionInterface;
+use Psr\Http\Client\ClientInterface;
+use Psr\Http\Message\RequestFactoryInterface;
+use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\StreamFactoryInterface;
+
+class TelemetryClient
+{
+    public function __construct(
+        private readonly ClientInterface         $httpClient,
+        private readonly RequestFactoryInterface $requestFactory,
+        private readonly StreamFactoryInterface  $streamFactory,
+        private readonly string                  $backendUrl,
+        private readonly string                  $ingestSecret,
+    ) {
+    }
+
+    public function reportLinkVisit(string $siteKey, string $clickId, string $pageUrl): void
+    {
+        $payload = ['clickId' => $clickId, 'pageUrl' => $pageUrl];
+
+        $this->post($siteKey, '/api/v1/catalog/link-visits', $payload);
+    }
+
+    public function reportOrder(string $siteKey, ChatOrder $order): void
+    {
+        $this->post($siteKey, '/api/v1/catalog/chat-orders', $order->jsonSerialize());
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     */
+    private function post(string $siteKey, string $path, array $payload): void
+    {
+        $request = $this->buildRequest($siteKey, $path, $payload);
+
+        try {
+            $response = $this->httpClient->sendRequest($request);
+        } catch (ClientExceptionInterface $exception) {
+            throw new TelemetryException('The telemetry request could not be sent.', 0, null, $exception);
+        }
+
+        $statusCode = $response->getStatusCode();
+        $isAccepted = $statusCode === 202;
+        if ($isAccepted) {
+            return;
+        }
+
+        throw $this->buildError($response, $statusCode);
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     */
+    private function buildRequest(string $siteKey, string $path, array $payload): RequestInterface
+    {
+        $body = json_encode($payload, JSON_THROW_ON_ERROR);
+        $stream = $this->streamFactory->createStream($body);
+        $url = rtrim($this->backendUrl, '/') . $path;
+
+        return $this->requestFactory->createRequest('POST', $url)
+            ->withHeader('Authorization', 'Bearer ' . $siteKey . '.' . $this->ingestSecret)
+            ->withHeader('Content-Type', 'application/json')
+            ->withHeader('Accept', 'application/json')
+            ->withBody($stream);
+    }
+
+    private function buildError(ResponseInterface $response, int $statusCode): TelemetryException
+    {
+        $payload = $this->decodeBody($response);
+        $error = $payload['error'] ?? [];
+        $error = is_array($error) ? $error : [];
+
+        $backendErrorCode = isset($error['code']) ? (string) $error['code'] : null;
+        $message = sprintf('The telemetry backend rejected the request with HTTP %d.', $statusCode);
+
+        return new TelemetryException($message, $statusCode, $backendErrorCode);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function decodeBody(ResponseInterface $response): array
+    {
+        $raw = (string) $response->getBody();
+        if ($raw === '') {
+            return [];
+        }
+
+        try {
+            $decoded = json_decode($raw, true, 512, JSON_THROW_ON_ERROR);
+        } catch (\JsonException) {
+            return [];
+        }
+
+        return is_array($decoded) ? $decoded : [];
+    }
+}

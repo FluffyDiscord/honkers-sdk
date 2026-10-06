@@ -227,6 +227,40 @@ foreach ($result->jobs as $job) {
 - `429` → `isThrottled()`, `retryAfterSeconds` set; nothing was queued.
 - Auth/validation failures throw `CatalogIngestException` (`getStatusCode()`, `getBackendErrorCode()`).
 
+## Chat click tracking
+
+Links the chat sends to your site carry a `gooseclid` query parameter. Report the landing and the
+orders it leads to, and the dashboard shows chat link visits, orders and revenue. Same auth and
+setup as the catalog client.
+
+```php
+use FluffyDiscord\Honkers\DTO\ChatOrder;
+use FluffyDiscord\Honkers\Exception\TelemetryException;
+use FluffyDiscord\Honkers\Telemetry\ClickId;
+use FluffyDiscord\Honkers\Telemetry\TelemetryClient;
+
+$telemetry = new TelemetryClient($psr18Client, $psr17Factory, $psr17Factory, 'https://honkers.dev', $ingestSecret);
+
+try {
+    // landing page view: a real browser GET, after the response succeeded
+    $clickId = (new ClickId())->find($_GET);
+    if ($clickId !== null) {
+        $telemetry->reportLinkVisit($siteKey, $clickId, 'https://shop.example/product/clipper');
+    }
+
+    // order placed: keep the click id (e.g. in the session) until checkout
+    $telemetry->reportOrder($siteKey, new ChatOrder($clickId, $order->getNumber(), 123450, 'CZK'));
+} catch (TelemetryException $exception) {
+    $logger->warning($exception->getMessage());   // never fail the page or the order over it
+}
+```
+
+- `POST {backend}/api/v1/catalog/link-visits` → `{clickId, pageUrl}`. Send the page URL without query or fragment.
+- `POST {backend}/api/v1/catalog/chat-orders` → `{clickId, orderNumber, revenue, currency}`.
+- **`revenue` is in ISO 4217 minor units**: CZK 1234.50 → `123450`, JPY 500 → `500`. `currency` is the ISO code.
+- Skip bots, link previews and prefetch requests (`Sec-Purpose: prefetch`).
+- `202` → done. Anything else, `429` included, throws `TelemetryException` (`getStatusCode()`, `getBackendErrorCode()`). Log it and move on.
+
 ## Widget embed
 
 Render the chat widget markup for any page:
