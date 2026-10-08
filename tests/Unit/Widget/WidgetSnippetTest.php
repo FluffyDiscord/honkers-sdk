@@ -19,6 +19,13 @@ class WidgetSnippetTest extends TestCase
         self::assertStringNotContainsString('locale=', $markup);
     }
 
+    public function testTheScriptLoadsBlockingWhenDeferIsOff(): void
+    {
+        $markup = (new WidgetSnippet())->render('https://honkers.test', 'pk_site', defer: false);
+
+        self::assertStringContainsString('<script src="https://honkers.b-cdn.net/widget/v1/chat.js"></script>', $markup);
+    }
+
     public function testTheCdnUrlOverridesTheScriptSource(): void
     {
         $markup = (new WidgetSnippet())->render('https://honkers.test', 'pk_site', 'https://cdn.test/widget/v1/chat.js');

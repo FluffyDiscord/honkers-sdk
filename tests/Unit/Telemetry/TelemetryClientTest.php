@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace FluffyDiscord\Honkers\Tests\Unit\Telemetry;
 
 use FluffyDiscord\Honkers\DTO\ChatOrder;
+use FluffyDiscord\Honkers\DTO\SiteCredentials;
 use FluffyDiscord\Honkers\Exception\TelemetryException;
 use FluffyDiscord\Honkers\Telemetry\TelemetryClient;
 use FluffyDiscord\Honkers\Tests\Unit\Fixtures\CapturingHttpClient;
@@ -21,7 +22,7 @@ class TelemetryClientTest extends TestCase
         $httpClient = new CapturingHttpClient(new Response(202));
         $client = $this->createClient($httpClient);
 
-        $client->reportLinkVisit('pk_site', 'click-123', 'https://shop.test/product/clipper');
+        $client->reportLinkVisit($this->createCredentials(),'click-123', 'https://shop.test/product/clipper');
 
         $request = $httpClient->lastRequest;
         self::assertNotNull($request);
@@ -41,7 +42,7 @@ class TelemetryClientTest extends TestCase
         $httpClient = new CapturingHttpClient(new Response(202));
         $client = $this->createClient($httpClient);
 
-        $client->reportOrder('pk_site', new ChatOrder('click-123', '000042', 123450, 'CZK'));
+        $client->reportOrder($this->createCredentials(),new ChatOrder('click-123', '000042', 123450, 'CZK'));
 
         $request = $httpClient->lastRequest;
         self::assertNotNull($request);
@@ -76,7 +77,7 @@ class TelemetryClientTest extends TestCase
         $client = $this->createClient(new CapturingHttpClient(new Response($statusCode, [], $body)));
 
         try {
-            $client->reportLinkVisit('pk_site', 'click-123', 'https://shop.test/');
+            $client->reportLinkVisit($this->createCredentials(),'click-123', 'https://shop.test/');
             self::fail('Expected a TelemetryException.');
         } catch (TelemetryException $exception) {
             self::assertSame($statusCode, $exception->getStatusCode());
@@ -91,7 +92,7 @@ class TelemetryClientTest extends TestCase
 
         $this->expectException(TelemetryException::class);
 
-        $client->reportOrder('pk_site', new ChatOrder('forged', '000042', 500, 'JPY'));
+        $client->reportOrder($this->createCredentials(),new ChatOrder('forged', '000042', 500, 'JPY'));
     }
 
     public function testATransportFailureIsWrapped(): void
@@ -100,7 +101,7 @@ class TelemetryClientTest extends TestCase
         $client = $this->createClient(new CapturingHttpClient(new Response(202), $failure));
 
         try {
-            $client->reportLinkVisit('pk_site', 'click-123', 'https://shop.test/');
+            $client->reportLinkVisit($this->createCredentials(),'click-123', 'https://shop.test/');
             self::fail('Expected a TelemetryException.');
         } catch (TelemetryException $exception) {
             self::assertSame(0, $exception->getStatusCode());
@@ -112,6 +113,11 @@ class TelemetryClientTest extends TestCase
     {
         $factory = new Psr17Factory();
 
-        return new TelemetryClient($httpClient, $factory, $factory, 'https://honkers.test/', 'ingest-secret');
+        return new TelemetryClient($httpClient, $factory, $factory, 'https://honkers.test/');
+    }
+
+    private function createCredentials(): SiteCredentials
+    {
+        return new SiteCredentials('pk_site', 'ingest-secret');
     }
 }

@@ -7,6 +7,7 @@ namespace FluffyDiscord\Honkers\Ingest;
 use FluffyDiscord\Honkers\DTO\CatalogChange;
 use FluffyDiscord\Honkers\DTO\CatalogChangeJob;
 use FluffyDiscord\Honkers\DTO\CatalogChangeResult;
+use FluffyDiscord\Honkers\DTO\SiteCredentials;
 use FluffyDiscord\Honkers\Enum\CatalogJobStatus;
 use FluffyDiscord\Honkers\Exception\CatalogIngestException;
 use Psr\Http\Client\ClientExceptionInterface;
@@ -23,7 +24,6 @@ class CatalogIngestClient
         private readonly RequestFactoryInterface $requestFactory,
         private readonly StreamFactoryInterface  $streamFactory,
         private readonly string                  $backendUrl,
-        private readonly string                  $ingestSecret,
     ) {
     }
 
@@ -32,11 +32,11 @@ class CatalogIngestClient
         return 500;
     }
 
-    public function send(string $siteKey, CatalogChange $change): CatalogChangeResult
+    public function send(SiteCredentials $credentials, CatalogChange $change): CatalogChangeResult
     {
         $this->guardBatchSize($change);
 
-        $request = $this->buildRequest($siteKey, $change);
+        $request = $this->buildRequest($credentials, $change);
 
         try {
             $response = $this->httpClient->sendRequest($request);
@@ -62,13 +62,13 @@ class CatalogIngestClient
         ));
     }
 
-    private function buildRequest(string $siteKey, CatalogChange $change): RequestInterface
+    private function buildRequest(SiteCredentials $credentials, CatalogChange $change): RequestInterface
     {
         $body = json_encode($change->jsonSerialize(), JSON_THROW_ON_ERROR);
         $stream = $this->streamFactory->createStream($body);
 
         return $this->requestFactory->createRequest('POST', $this->buildChangesUrl())
-            ->withHeader('Authorization', 'Bearer ' . $siteKey . '.' . $this->ingestSecret)
+            ->withHeader('Authorization', 'Bearer ' . $credentials->getBearerToken())
             ->withHeader('Content-Type', 'application/json')
             ->withHeader('Accept', 'application/json')
             ->withBody($stream);

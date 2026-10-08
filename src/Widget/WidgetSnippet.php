@@ -6,11 +6,17 @@ namespace FluffyDiscord\Honkers\Widget;
 
 class WidgetSnippet
 {
-    public function render(string $backendUrl, string $siteKey, string $cdnUrl = '', string $locale = ''): string
-    {
+    public function render(
+        string $backendUrl,
+        string $siteKey,
+        string $cdnUrl = '',
+        string $locale = '',
+        bool $defer = true,
+    ): string {
         $scriptUrl = $this->resolveScriptUrl($cdnUrl);
+        $deferAttribute = $defer ? ' defer' : '';
 
-        $script = sprintf('<script src="%s" defer></script>', $this->escape($scriptUrl));
+        $script = sprintf('<script src="%s"%s></script>', $this->escape($scriptUrl), $deferAttribute);
         $element = $this->renderElement($backendUrl, $siteKey, $locale);
 
         return $script . "\n" . $element;

@@ -2,7 +2,7 @@
     "name": "fluffydiscord/honkers-sdk",
     "description": "Framework-agnostic chatbot tool-server core: tools, data sources, JSON-schema generation and result DTOs",
     "type": "library",
-    "license": "proprietary",
+    "license": "MIT",
     "require": {
         "php": "^8.1",
         "ext-intl": "*",

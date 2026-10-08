@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace FluffyDiscord\Honkers\Tests\Unit\Ingest;
 
 use FluffyDiscord\Honkers\DTO\CatalogChange;
+use FluffyDiscord\Honkers\DTO\SiteCredentials;
 use FluffyDiscord\Honkers\Enum\CatalogJobStatus;
 use FluffyDiscord\Honkers\Enum\CatalogSourceName;
 use FluffyDiscord\Honkers\Exception\CatalogIngestException;
@@ -29,7 +30,7 @@ class CatalogIngestClientTest extends TestCase
         $client = $this->createClient($httpClient);
 
         $change = new CatalogChange(CatalogSourceName::Products, 'cs_CZ', ['CLIPPER-01', 'BAD-99']);
-        $result = $client->send('pk_site', $change);
+        $result = $client->send($this->createCredentials(),$change);
 
         self::assertTrue($result->accepted);
         self::assertFalse($result->isThrottled());
@@ -56,7 +57,7 @@ class CatalogIngestClientTest extends TestCase
         $response = new Response(429, ['Retry-After' => '300'], json_encode(['error' => ['code' => 'ingest_backlog']]));
         $client = $this->createClient(new CapturingHttpClient($response));
 
-        $result = $client->send('pk_site', $this->createChange());
+        $result = $client->send($this->createCredentials(),$this->createChange());
 
         self::assertFalse($result->accepted);
         self::assertTrue($result->isThrottled());
@@ -69,7 +70,7 @@ class CatalogIngestClientTest extends TestCase
         $response = new Response(429, [], '');
         $client = $this->createClient(new CapturingHttpClient($response));
 
-        $result = $client->send('pk_site', $this->createChange());
+        $result = $client->send($this->createCredentials(),$this->createChange());
 
         self::assertSame(300, $result->retryAfterSeconds);
     }
@@ -80,7 +81,7 @@ class CatalogIngestClientTest extends TestCase
         $client = $this->createClient(new CapturingHttpClient($response));
 
         try {
-            $client->send('pk_site', $this->createChange());
+            $client->send($this->createCredentials(),$this->createChange());
             self::fail('Expected a CatalogIngestException.');
         } catch (CatalogIngestException $exception) {
             self::assertSame(401, $exception->getStatusCode());
@@ -95,7 +96,7 @@ class CatalogIngestClientTest extends TestCase
 
         $this->expectException(CatalogIngestException::class);
 
-        $client->send('pk_site', $this->createChange());
+        $client->send($this->createCredentials(),$this->createChange());
     }
 
     public function testAnEmptyBatchIsRejectedBeforeSending(): void
@@ -104,7 +105,7 @@ class CatalogIngestClientTest extends TestCase
         $client = $this->createClient($httpClient);
 
         try {
-            $client->send('pk_site', new CatalogChange(CatalogSourceName::Products, 'cs_CZ', []));
+            $client->send($this->createCredentials(),new CatalogChange(CatalogSourceName::Products, 'cs_CZ', []));
             self::fail('Expected an InvalidArgumentException.');
         } catch (\InvalidArgumentException) {
             self::assertNull($httpClient->lastRequest);
@@ -117,7 +118,7 @@ class CatalogIngestClientTest extends TestCase
         $client = $this->createClient($httpClient);
         $externalIds = $this->createExternalIds(500);
 
-        $result = $client->send('pk_site', new CatalogChange(CatalogSourceName::Products, 'cs_CZ', $externalIds));
+        $result = $client->send($this->createCredentials(),new CatalogChange(CatalogSourceName::Products, 'cs_CZ', $externalIds));
 
         self::assertTrue($result->accepted);
         self::assertNotNull($httpClient->lastRequest);
@@ -130,7 +131,7 @@ class CatalogIngestClientTest extends TestCase
         $externalIds = $this->createExternalIds(501);
 
         try {
-            $client->send('pk_site', new CatalogChange(CatalogSourceName::Products, 'cs_CZ', $externalIds));
+            $client->send($this->createCredentials(),new CatalogChange(CatalogSourceName::Products, 'cs_CZ', $externalIds));
             self::fail('Expected an InvalidArgumentException.');
         } catch (\InvalidArgumentException) {
             self::assertNull($httpClient->lastRequest);
@@ -144,7 +145,7 @@ class CatalogIngestClientTest extends TestCase
         ]));
         $client = $this->createClient(new CapturingHttpClient($response));
 
-        $result = $client->send('pk_site', $this->createChange());
+        $result = $client->send($this->createCredentials(),$this->createChange());
 
         self::assertSame(CatalogJobStatus::Unknown, $result->jobs[0]->status);
     }
@@ -161,7 +162,12 @@ class CatalogIngestClientTest extends TestCase
     {
         $factory = new Psr17Factory();
 
-        return new CatalogIngestClient($httpClient, $factory, $factory, 'https://honkers.test/', 'ingest-secret');
+        return new CatalogIngestClient($httpClient, $factory, $factory, 'https://honkers.test/');
+    }
+
+    private function createCredentials(): SiteCredentials
+    {
+        return new SiteCredentials('pk_site', 'ingest-secret');
     }
 
     private function createChange(): CatalogChange

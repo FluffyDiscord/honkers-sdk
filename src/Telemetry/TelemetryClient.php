@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace FluffyDiscord\Honkers\Telemetry;
 
 use FluffyDiscord\Honkers\DTO\ChatOrder;
+use FluffyDiscord\Honkers\DTO\SiteCredentials;
 use FluffyDiscord\Honkers\Exception\TelemetryException;
 use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Client\ClientInterface;
@@ -20,28 +21,27 @@ class TelemetryClient
         private readonly RequestFactoryInterface $requestFactory,
         private readonly StreamFactoryInterface  $streamFactory,
         private readonly string                  $backendUrl,
-        private readonly string                  $ingestSecret,
     ) {
     }
 
-    public function reportLinkVisit(string $siteKey, string $clickId, string $pageUrl): void
+    public function reportLinkVisit(SiteCredentials $credentials, string $clickId, string $pageUrl): void
     {
         $payload = ['clickId' => $clickId, 'pageUrl' => $pageUrl];
 
-        $this->post($siteKey, '/api/v1/catalog/link-visits', $payload);
+        $this->post($credentials, '/api/v1/catalog/link-visits', $payload);
     }
 
-    public function reportOrder(string $siteKey, ChatOrder $order): void
+    public function reportOrder(SiteCredentials $credentials, ChatOrder $order): void
     {
-        $this->post($siteKey, '/api/v1/catalog/chat-orders', $order->jsonSerialize());
+        $this->post($credentials, '/api/v1/catalog/chat-orders', $order->jsonSerialize());
     }
 
     /**
      * @param array<string, mixed> $payload
      */
-    private function post(string $siteKey, string $path, array $payload): void
+    private function post(SiteCredentials $credentials, string $path, array $payload): void
     {
-        $request = $this->buildRequest($siteKey, $path, $payload);
+        $request = $this->buildRequest($credentials, $path, $payload);
 
         try {
             $response = $this->httpClient->sendRequest($request);
@@ -61,14 +61,14 @@ class TelemetryClient
     /**
      * @param array<string, mixed> $payload
      */
-    private function buildRequest(string $siteKey, string $path, array $payload): RequestInterface
+    private function buildRequest(SiteCredentials $credentials, string $path, array $payload): RequestInterface
     {
         $body = json_encode($payload, JSON_THROW_ON_ERROR);
         $stream = $this->streamFactory->createStream($body);
         $url = rtrim($this->backendUrl, '/') . $path;
 
         return $this->requestFactory->createRequest('POST', $url)
-            ->withHeader('Authorization', 'Bearer ' . $siteKey . '.' . $this->ingestSecret)
+            ->withHeader('Authorization', 'Bearer ' . $credentials->getBearerToken())
             ->withHeader('Content-Type', 'application/json')
             ->withHeader('Accept', 'application/json')
             ->withBody($stream);
