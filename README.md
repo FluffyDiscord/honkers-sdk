@@ -227,7 +227,7 @@ $change = new CatalogChange(CatalogSourceName::Products, 'cs_CZ', ['CLIPPER-01',
 $result = $client->send($credentials, $change);
 
 if ($result->isThrottled()) {
-    // backend is busy — retry after $result->retryAfterSeconds
+    // nothing was queued — send the same ids again after $result->retryAfterSeconds
 }
 foreach ($result->jobs as $job) {
     // $job->externalId, $job->jobId, $job->status (CatalogJobStatus), $job->violation
@@ -240,8 +240,12 @@ workers.
 
 - `source` is `products`, `categories`, or `cms_pages` (`CatalogSourceName`).
 - **Max 500 ids per call.** More than that throws — chunk them yourself.
-- `202` → `accepted`, with a per-id job list (bad ids come back `rejected` with a `violation`).
-- `429` → `isThrottled()`, `retryAfterSeconds` set; nothing was queued.
+- `202` → `accepted`, with a per-id job list: `queued`, or `rejected` with a `violation`. The other ids
+  of the batch are still queued.
+- `jobId` is the same for every send of one id (per source and locale). Sending an id again is always safe.
+- `429` (over 30 calls a second from your IP) or `503` (backend can't queue right now) → `isThrottled()`,
+  nothing was queued. Wait `retryAfterSeconds` (1 s when the backend sends no `Retry-After`) and send the
+  same ids again.
 - Auth/validation failures throw `CatalogIngestException` (`getStatusCode()`, `getBackendErrorCode()`).
 
 ## Chat click tracking

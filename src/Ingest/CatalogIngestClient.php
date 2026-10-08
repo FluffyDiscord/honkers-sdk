@@ -89,7 +89,8 @@ class CatalogIngestClient
         }
 
         $isThrottled = $statusCode === 429;
-        if ($isThrottled) {
+        $isUnavailable = $statusCode === 503;
+        if ($isThrottled || $isUnavailable) {
             return new CatalogChangeResult(false, [], $this->readRetryAfterSeconds($response));
         }
 
@@ -146,7 +147,7 @@ class CatalogIngestClient
 
     private function getDefaultRetryAfterSeconds(): int
     {
-        return 300;
+        return 1;
     }
 
     private function buildError(ResponseInterface $response, int $statusCode): CatalogIngestException

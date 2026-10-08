@@ -22,7 +22,7 @@ class CatalogIngestClientTest extends TestCase
     {
         $response = new Response(202, [], json_encode([
             'jobs' => [
-                ['externalId' => 'CLIPPER-01', 'jobId' => '018f-uuid', 'status' => 'queued', 'violation' => null],
+                ['externalId' => 'CLIPPER-01', 'jobId' => 'document/018f-uuid/products-cs_CZ-CLIPPER-01', 'status' => 'queued', 'violation' => null],
                 ['externalId' => 'BAD-99', 'jobId' => null, 'status' => 'rejected', 'violation' => 'unknown id'],
             ],
         ]));
@@ -36,7 +36,7 @@ class CatalogIngestClientTest extends TestCase
         self::assertFalse($result->isThrottled());
         self::assertCount(2, $result->jobs);
         self::assertSame(CatalogJobStatus::Queued, $result->jobs[0]->status);
-        self::assertSame('018f-uuid', $result->jobs[0]->jobId);
+        self::assertSame('document/018f-uuid/products-cs_CZ-CLIPPER-01', $result->jobs[0]->jobId);
         self::assertTrue($result->jobs[1]->isRejected());
         self::assertNull($result->jobs[1]->jobId);
         self::assertSame('unknown id', $result->jobs[1]->violation);
@@ -65,14 +65,27 @@ class CatalogIngestClientTest extends TestCase
         self::assertSame([], $result->jobs);
     }
 
-    public function testAThrottleWithoutANumericRetryAfterFallsBackToTheDefault(): void
+    public function testAThrottleWithoutANumericRetryAfterWaitsOneSecond(): void
     {
-        $response = new Response(429, [], '');
+        $response = new Response(429, [], json_encode(['error' => ['code' => 'rate_limited']]));
         $client = $this->createClient(new CapturingHttpClient($response));
 
         $result = $client->send($this->createCredentials(),$this->createChange());
 
-        self::assertSame(300, $result->retryAfterSeconds);
+        self::assertTrue($result->isThrottled());
+        self::assertSame(1, $result->retryAfterSeconds);
+    }
+
+    public function testA503IsReportedAsThrottledSoTheSameIdsAreSentAgain(): void
+    {
+        $response = new Response(503, ['Retry-After' => '60'], json_encode(['error' => ['code' => 'internal']]));
+        $client = $this->createClient(new CapturingHttpClient($response));
+
+        $result = $client->send($this->createCredentials(),$this->createChange());
+
+        self::assertFalse($result->accepted);
+        self::assertTrue($result->isThrottled());
+        self::assertSame(60, $result->retryAfterSeconds);
     }
 
     public function testAnAuthFailureThrowsWithTheStatusAndBackendCode(): void
@@ -141,7 +154,7 @@ class CatalogIngestClientTest extends TestCase
     public function testAnUnrecognisedStatusMapsToUnknownRatherThanQueued(): void
     {
         $response = new Response(202, [], json_encode([
-            'jobs' => [['externalId' => 'X-1', 'jobId' => 'j1', 'status' => 'teleported', 'violation' => null]],
+            'jobs' => [['externalId' => 'X-1', 'jobId' => 'j1', 'status' => 'processing', 'violation' => null]],
         ]));
         $client = $this->createClient(new CapturingHttpClient($response));
 

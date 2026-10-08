@@ -1,5 +1,18 @@
 # Changelog
 
+## v2.0.1
+
+### Changed
+
+- `CatalogIngestClient::send()` reports a `503` as throttled, like a `429`: nothing was queued, send the same
+  ids again after `retryAfterSeconds`.
+- A throttle without `Retry-After` waits 1 s instead of 300 s. The backend's rate limit sends none.
+
+### Removed
+
+- `CatalogJobStatus::Processing`, `Done`, `Failed` and `Cancelled`. The backend answers only `queued` or
+  `rejected`; anything else is `Unknown`.
+
 ## v2.0.0
 
 See [UPGRADE-2.0.md](UPGRADE-2.0.md).
