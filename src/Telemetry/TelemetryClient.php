@@ -7,6 +7,7 @@ namespace FluffyDiscord\Honkers\Telemetry;
 use FluffyDiscord\Honkers\DTO\ChatOrder;
 use FluffyDiscord\Honkers\DTO\SiteCredentials;
 use FluffyDiscord\Honkers\Exception\TelemetryException;
+use FluffyDiscord\Honkers\Http\BackendRejectionMessage;
 use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
@@ -81,7 +82,7 @@ class TelemetryClient
         $error = is_array($error) ? $error : [];
 
         $backendErrorCode = isset($error['code']) ? (string) $error['code'] : null;
-        $message = sprintf('The telemetry backend rejected the request with HTTP %d.', $statusCode);
+        $message = (new BackendRejectionMessage())->build('telemetry', $statusCode, $error);
 
         return new TelemetryException($message, $statusCode, $backendErrorCode);
     }

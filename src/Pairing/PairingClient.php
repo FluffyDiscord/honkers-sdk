@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace FluffyDiscord\Honkers\Pairing;
 
 use FluffyDiscord\Honkers\Exception\PairingException;
+use FluffyDiscord\Honkers\Http\BackendRejectionMessage;
 use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
@@ -151,7 +152,7 @@ class PairingClient
         $backendErrorCode = $error['code'] ?? null;
         $hasBackendErrorCode = is_string($backendErrorCode) && $backendErrorCode !== '';
         $errorCode = $hasBackendErrorCode ? $backendErrorCode : PairingException::INVALID_RESPONSE;
-        $message = sprintf('The pairing backend rejected the request with HTTP %d.', $statusCode);
+        $message = (new BackendRejectionMessage())->build('pairing', $statusCode, $error);
 
         return new PairingException($message, $errorCode);
     }

@@ -1,5 +1,13 @@
 # Changelog
 
+## v2.0.2
+
+### Changed
+
+- `CatalogIngestException`, `TelemetryException` and `PairingException` name the backend error code and the first
+  5 violations in their message:
+  `…HTTP 422, error code "validation_failed": "externalIds[0]" This value should be of type string.`
+
 ## v2.0.1
 
 ### Changed

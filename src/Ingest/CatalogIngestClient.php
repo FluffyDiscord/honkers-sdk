@@ -10,6 +10,7 @@ use FluffyDiscord\Honkers\DTO\CatalogChangeResult;
 use FluffyDiscord\Honkers\DTO\SiteCredentials;
 use FluffyDiscord\Honkers\Enum\CatalogJobStatus;
 use FluffyDiscord\Honkers\Exception\CatalogIngestException;
+use FluffyDiscord\Honkers\Http\BackendRejectionMessage;
 use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
@@ -157,7 +158,7 @@ class CatalogIngestClient
         $error = is_array($error) ? $error : [];
 
         $backendErrorCode = isset($error['code']) ? (string) $error['code'] : null;
-        $message = sprintf('The catalog ingest backend rejected the request with HTTP %d.', $statusCode);
+        $message = (new BackendRejectionMessage())->build('catalog ingest', $statusCode, $error);
 
         return new CatalogIngestException($message, $statusCode, $backendErrorCode);
     }
