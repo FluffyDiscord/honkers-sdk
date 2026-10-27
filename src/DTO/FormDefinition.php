@@ -16,16 +16,16 @@ class FormDefinition implements \JsonSerializable
     ) {
     }
 
-    public function translated(TranslatorInterface $translator, string $locale): self
+    public function translated(TranslatorInterface $translator, string $locale, ?string $domain = null): self
     {
         return new self(
             $this->formId,
-            $translator->trans($this->title, [], 'messages', $locale),
+            $translator->trans($this->title, [], $domain, $locale),
             array_map(
-                fn (FormField $field): FormField => $field->translated($translator, $locale),
+                fn (FormField $field): FormField => $field->translated($translator, $locale, $domain),
                 $this->fields,
             ),
-            $translator->trans($this->submitLabel, [], 'messages', $locale),
+            $translator->trans($this->submitLabel, [], $domain, $locale),
         );
     }
 

@@ -13,21 +13,23 @@ class ToolDefinition implements \JsonSerializable
         public readonly string $description,
         public readonly ?ToolUiHints $ui = null,
         public readonly ?array $inputSchema = null,
+        public readonly ?string $translationDomain = null,
     ) {
     }
 
     public function withInputSchema(array $inputSchema): self
     {
-        return new self($this->name, $this->description, $this->ui, $inputSchema);
+        return new self($this->name, $this->description, $this->ui, $inputSchema, $this->translationDomain);
     }
 
     public function translated(TranslatorInterface $translator, string $locale): self
     {
         return new self(
             $this->name,
-            $translator->trans($this->description, [], 'messages', $locale),
-            $this->ui?->translated($translator, $locale),
+            $translator->trans($this->description, [], $this->translationDomain, $locale),
+            $this->ui?->translated($translator, $locale, $this->translationDomain),
             $this->inputSchema,
+            $this->translationDomain,
         );
     }
 

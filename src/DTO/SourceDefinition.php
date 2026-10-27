@@ -18,21 +18,23 @@ class SourceDefinition implements \JsonSerializable
         public readonly string $name,
         public readonly string $description,
         ?array $locales = null,
+        public readonly ?string $translationDomain = null,
     ) {
         $this->locales = $locales === [] ? null : $locales;
     }
 
     public function withLocales(array $locales): self
     {
-        return new self($this->name, $this->description, $locales);
+        return new self($this->name, $this->description, $locales, $this->translationDomain);
     }
 
     public function translated(TranslatorInterface $translator, string $locale): self
     {
         return new self(
             $this->name,
-            $translator->trans($this->description, [], 'messages', $locale),
+            $translator->trans($this->description, [], $this->translationDomain, $locale),
             $this->locales,
+            $this->translationDomain,
         );
     }
 

@@ -1,5 +1,17 @@
 # Changelog
 
+## v2.0.3
+
+### Added
+
+- `ToolDefinition` and `SourceDefinition` take a `translationDomain` (default `null` = `messages`). `translated()`
+  looks up the description, form title, field and option labels and submit label in that domain.
+
+### Changed
+
+- **`ChatbotLocaleContextInterface` has a new method, `getDefaultLocale()`** — the locale a missing translation
+  falls back to. Your own implementation must add it: return the channel's default locale.
+
 ## v2.0.2
 
 ### Changed

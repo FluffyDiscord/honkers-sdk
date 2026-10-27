@@ -18,19 +18,19 @@ class FormField implements \JsonSerializable
     ) {
     }
 
-    public function translated(TranslatorInterface $translator, string $locale): self
+    public function translated(TranslatorInterface $translator, string $locale, ?string $domain = null): self
     {
         $translatedOptions = null;
         if ($this->options !== null) {
             $translatedOptions = array_map(
-                fn (FormFieldOption $option): FormFieldOption => $option->translated($translator, $locale),
+                fn (FormFieldOption $option): FormFieldOption => $option->translated($translator, $locale, $domain),
                 $this->options,
             );
         }
 
         return new self(
             $this->name,
-            $translator->trans($this->label, [], 'messages', $locale),
+            $translator->trans($this->label, [], $domain, $locale),
             $this->type,
             $this->required,
             $translatedOptions,

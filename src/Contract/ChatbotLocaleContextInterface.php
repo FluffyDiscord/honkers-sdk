@@ -10,6 +10,8 @@ interface ChatbotLocaleContextInterface
 
     public function getCurrentLocale(): string;
 
+    public function getDefaultLocale(): string;
+
     /**
      * @return list<string>
      */
